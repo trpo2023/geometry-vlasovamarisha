@@ -122,8 +122,8 @@ int circle(char* figure)
 
     int current_el = 7;
 
-    if (figure[6] != '(') { 
-	return print_error(errcode = 6, current_el, 0);
+    if (figure[6] != '(') {
+        return print_error(errcode = 6, current_el, 0);
     }
 
     if (check_num(figure, &current_el) != 0) {
