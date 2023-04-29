@@ -1,40 +1,65 @@
-APP_NAME = appgeo                    # переменные
+APP_NAME = appgeo
+TEST_NAME = tests
 LIB_STATIC = geometry
 LIB_DIR = libgeometry
 CC = gcc
 
-CFLAGS = -Wall -Werror
-CPPFLAGS = -Isrc -MP -MMD       # -Isrc ключ -I , путь к компиляции src, ищет geometry.h в папке src. ; -MP создает фиктивную цель для каждой зависимости, -MMD создает файлы зависимости
+CFLAGS = -Wall -Werror -g -O0
+CPPFLAGS = -Isrc -Ithirdparty -MP -MMD
 
 BIN_DIR = bin
 OBJ_DIR = obj
 SRC_DIR = src
+TEST_DIR = test
 
-APP_PATH = $(BIN_DIR)/$(APP_NAME)                  #путь к приложению
-LIB_PATH = $(OBJ_DIR)/$(SRC_DIR)/$(LIB_DIR)/$(LIB_STATIC).a      #путь к статической библиотеке с расширением .a
+APP_PATH = $(BIN_DIR)/$(APP_NAME)
+LIB_PATH = $(OBJ_DIR)/$(SRC_DIR)/$(LIB_DIR)/$(LIB_STATIC).a
+TEST_PATH = $(BIN_DIR)/$(TEST_NAME)
 
-APP_SOURCES = $(shell find $(SRC_DIR)/$(LIB_STATIC) -name '*.c')          #исходники, где хранятся файлы,
-APP_OBJECTS = $(APP_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/$(SRC_DIR)/%.o)        #создание объектных файлов с расширением .o (раскрывается как цель)
-LIB_SOURCES = $(shell find $(SRC_DIR)/$(LIB_DIR) -name '*.c')           #ищет библиотеки, файлы с реализацией функций
-LIB_OBJECTS = $(LIB_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/$(SRC_DIR)/%.o)        #преобразует библиотечные файлы с расширением ".c"  в  ".o" (раскрывается как цель)
+SRC_EXT = c
 
-DEPS = $(APP_OBJECTS:.o=.d) $(LIB_OBJECTS:.o=.d)  #создает файлы зависимости с расширением .d
+APP_SOURCES = $(shell find $(SRC_DIR)/$(LIB_STATIC) -name '*.$(SRC_EXT)')
+APP_OBJECTS = $(APP_SOURCES:$(SRC_DIR)/%.$(SRC_EXT)=$(OBJ_DIR)/$(SRC_DIR)/%.o)
 
-.PHONY: all      #позволяет независимо от наличия файла с таким же названием как и данная цель выполнять определенные действия
+LIB_SOURCES = $(shell find $(SRC_DIR)/$(LIB_DIR) -name '*.$(SRC_EXT)')
+LIB_OBJECTS = $(LIB_SOURCES:$(SRC_DIR)/%.$(SRC_EXT)=$(OBJ_DIR)/$(SRC_DIR)/%.o)
+
+TEST_SOURCE = $(shell find $(TEST_DIR) -name '*.$(SRC_EXT)')
+TEST_OBJECTS = $(TEST_SOURCE:$(TEST_DIR)/%.$(SRC_EXT)=$(OBJ_DIR)/$(TEST_DIR)/%.o)
+
+DEPS = $(APP_OBJECTS:.o=.d) $(LIB_OBJECTS:.o=.d)
+
+.PHONY: all
 all: $(APP_PATH)
 
--include $(DEPS) #подключить файлы зависимости, позволяет компилировать измененные зависящие файлы
-$(APP_PATH): $(APP_OBJECTS) $(LIB_PATH)      # создает приложение с названием
-	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ -lm        # -lm подключение math.h для использования константы M_PI
+-include $(DEPS)
+$(APP_PATH): $(APP_OBJECTS) $(LIB_PATH)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ -lm
 
-$(LIB_PATH): $(LIB_OBJECTS)   # переделывает main файл, создает статическую библиотеку с раширением .a
-	ar rcs $@ $^           # $^ - берет все что указано в зависимости, $< - берет одно поочередно, $@ - подставляет имя цели, ac rcs - команда для статической библиотеки
+$(LIB_PATH): $(LIB_OBJECTS)
+	ar rcs $@ $^
 
-$(OBJ_DIR)/%.o: %.c   # ищет .с и создает .o
+$(OBJ_DIR)/%.o: %.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 .PHONY: clean
-clean:           # удаляет приложение и файлы с расширениями .o, .d, .a (удаляет артефакты сборки)
+clean:
 	$(RM) $(APP_PATH) $(LIB_PATH)
+	$(RM) $(TEST_PATH)
 	find $(OBJ_DIR) -name '*.o' -exec $(RM) '{}' \;
 	find $(OBJ_DIR) -name '*.d' -exec $(RM) '{}' \;
+
+
+.PHONY: run
+run:
+	./$(APP_PATH)
+
+.PHONY: test test_run
+test: $(TEST_PATH)
+
+$(TEST_PATH): $(TEST_OBJECTS) $(LIB_PATH)
+	$(CC) $(CFLAGS) $^ -o $@ -lm
+
+.PHONY: test_run
+test_run: $(TEST_PATH)
+	./$(TEST_PATH)
