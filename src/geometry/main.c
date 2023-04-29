@@ -1,3 +1,4 @@
+#include <malloc.h>
 #include <stdio.h>
 
 #include <libgeometry/calc.h>
@@ -6,19 +7,28 @@
 int main()
 {
     double a, p;
-    char figure[64];
-
+    struct FigureInfo* current
+            = (struct FigureInfo*)malloc(sizeof(struct FigureInfo));
+    current->prev = NULL;
     while (1) {
-        fgets(figure, 64, stdin);
-        if (figure[0] == 'e') {
+        current->circle = (char*)malloc(sizeof(struct FigureInfo));
+        fgets(current->circle, 64, stdin);
+        int errcode = circle(current->circle);
+        if (errcode == 9) {
             return 0;
         }
-        if (circle(figure) == 0) {
-            p = perimeter(figure);
-            a = area(figure);
+        if (circle(current->circle) == 0) {
+            current->next
+                    = (struct FigureInfo*)malloc(sizeof(struct FigureInfo));
+            p = perimeter(current->circle, current);
+            a = area(current->circle, current);
+            printf("perimeter: %f\narea: %f\n", p, a);
+            int i = intersections(current->circle, current);
+            a = a + i;
 
-            printf("\nperimeter: %f\narea: %f\n", p, a);
+            struct FigureInfo* node = current;
+            current = current->next;
+            current->prev = node;
         }
     }
-    return 0;
 }
