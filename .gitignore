@@ -3,7 +3,4 @@
 *.a
 appgeo
 tests
-obj/src/.keep
-obj/test/
-test/
-thirdparty/
+
