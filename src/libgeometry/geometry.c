@@ -105,6 +105,10 @@ int check_num(char figure[], int* ptr)
 
 int circle(char* figure)
 {
+    if (figure[0] == 'e') {
+        printf("Exiting application...\n");
+        return 9;
+    }
     int errcode;
     char str[6] = "circle";
     char substr[13] = "-.0123456789";
@@ -126,8 +130,9 @@ int circle(char* figure)
         return print_error(errcode = 6, current_el, 0);
     }
 
-    if (check_num(figure, &current_el) != 0) {
-        return -1;
+    errcode = check_num(figure, &current_el);
+    if (errcode != 0) {
+        return errcode;
     }
 
     if (figure[current_el - 1] != ',') {
